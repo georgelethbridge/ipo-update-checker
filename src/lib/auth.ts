@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { Profile } from '../types/db';
 
 export const signInWithGoogle = async () => {
-  const redirectTo = window.location.origin + window.location.pathname;
+  const redirectTo = `${window.location.origin}/ipo-update-checker/`;
   return supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
