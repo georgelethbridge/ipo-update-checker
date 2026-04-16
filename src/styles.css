@@ -1,0 +1,14 @@
+:root { font-family: Arial, sans-serif; color: #1f2937; }
+body { margin: 0; background: #f6f7fb; }
+main { max-width: 960px; margin: 1rem auto; padding: 0 1rem 2rem; }
+nav { padding: 0.75rem 1rem; background: #111827; }
+nav a { color: white; margin-right: 0.75rem; }
+.card { background: white; border-radius: 8px; padding: 1rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.instructions { background: #fffbeb; padding: .5rem; border-left: 4px solid #f59e0b; }
+.baseline { background: #eef2ff; padding: .5rem .75rem; border-radius: 6px; }
+input, textarea, button { width: 100%; margin: .25rem 0; padding: .5rem; }
+button { cursor: pointer; }
+.row { border-top: 1px solid #e5e7eb; margin-top: .5rem; padding-top: .5rem; }
+.split { display: grid; grid-template-columns: 1fr 2fr; gap: 1rem; }
+pre { white-space: pre-wrap; max-height: 220px; overflow: auto; }
+.center { display: grid; place-items: center; min-height: 70vh; }
