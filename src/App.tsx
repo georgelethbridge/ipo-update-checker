@@ -23,15 +23,60 @@ function AdminRoute({ children }: { children: JSX.Element }) {
   return children;
 }
 
+function AppNav() {
+  const [role, setRole] = useState<string>('worker');
+
+  useEffect(() => {
+    getMyProfile().then((profile) => setRole(profile?.role ?? 'worker'));
+  }, []);
+
+  return (
+    <nav>
+      <Link to="/">Tasks</Link>
+      {role === 'admin' && (
+        <>
+          <Link to="/admin">Admin Review</Link>
+          <Link to="/admin/categories">Categories</Link>
+        </>
+      )}
+    </nav>
+  );
+}
+
 export default function App() {
   return (
     <>
-      <nav><Link to="/">Tasks</Link> | <Link to="/admin">Admin Review</Link> | <Link to="/admin/categories">Categories</Link></nav>
+      <AppNav />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<AuthGate><TaskPage /></AuthGate>} />
-        <Route path="/admin" element={<AuthGate><AdminRoute><AdminPage /></AdminRoute></AuthGate>} />
-        <Route path="/admin/categories" element={<AuthGate><AdminRoute><AdminCategoriesPage /></AdminRoute></AuthGate>} />
+        <Route
+          path="/"
+          element={
+            <AuthGate>
+              <TaskPage />
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AuthGate>
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin/categories"
+          element={
+            <AuthGate>
+              <AdminRoute>
+                <AdminCategoriesPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
       </Routes>
     </>
   );
