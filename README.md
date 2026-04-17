@@ -10,7 +10,11 @@ Static React + Vite frontend for assigning daily IP office checks to workers, wi
 - Mismatch chain entry and required newest article text
 - Server-side AI summary + category suggestion (`summarize-article` edge function)
 - Admin mismatch review (edit summary/categories, approve/reject)
+- Admin options dashboard (flow-based)
 - Admin category management
+- Admin territory/site management
+- Admin users, role, and activity management
+- Admin latest article + summary audit view
 
 ## Local setup
 
@@ -30,7 +34,9 @@ Static React + Vite frontend for assigning daily IP office checks to workers, wi
 
 ## Supabase setup
 
-1. Run migration in `supabase/migrations/20260416104000_init.sql`.
+1. Run migrations in order:
+   - `supabase/migrations/20260416104000_init.sql`
+   - `supabase/migrations/20260417113000_admin_management_policies.sql`
 2. Configure Google provider in Supabase Auth.
 3. Set redirect URLs:
    - `http://localhost:5173`

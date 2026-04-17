@@ -6,6 +6,10 @@ import TaskPage from './pages/TaskPage';
 import AdminPage from './pages/AdminPage';
 import AdminCategoriesPage from './pages/AdminCategoriesPage';
 import { getMyProfile } from './lib/auth';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import AdminSitesPage from './pages/AdminSitesPage';
+import AdminUsersPage from './pages/AdminUsersPage';
+import AdminAuditPage from './pages/AdminAuditPage';
 
 function AdminRoute({ children }: { children: JSX.Element }) {
   const [role, setRole] = useState<string>('');
@@ -35,7 +39,8 @@ function AppNav() {
       <Link to="/">Tasks</Link>
       {role === 'admin' && (
         <>
-          <Link to="/admin">Admin Review</Link>
+          <Link to="/admin">Admin options</Link>
+          <Link to="/admin/reviews">Submission review</Link>
           <Link to="/admin/categories">Categories</Link>
         </>
       )}
@@ -62,6 +67,16 @@ export default function App() {
           element={
             <AuthGate>
               <AdminRoute>
+                <AdminDashboardPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin/reviews"
+          element={
+            <AuthGate>
+              <AdminRoute>
                 <AdminPage />
               </AdminRoute>
             </AuthGate>
@@ -73,6 +88,36 @@ export default function App() {
             <AuthGate>
               <AdminRoute>
                 <AdminCategoriesPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin/sites"
+          element={
+            <AuthGate>
+              <AdminRoute>
+                <AdminSitesPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AuthGate>
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            </AuthGate>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <AuthGate>
+              <AdminRoute>
+                <AdminAuditPage />
               </AdminRoute>
             </AuthGate>
           }
