@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, Navigate, Route, Routes } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AuthGate from './components/AuthGate';
 import LoginPage from './pages/LoginPage';
 import TaskPage from './pages/TaskPage';
@@ -29,22 +29,34 @@ function AdminRoute({ children }: { children: JSX.Element }) {
 
 function AppNav() {
   const [role, setRole] = useState<string>('worker');
+  const location = useLocation();
+  const onLogin = location.pathname === '/login';
 
   useEffect(() => {
+    if (onLogin) return;
     getMyProfile().then((profile) => setRole(profile?.role ?? 'worker'));
-  }, []);
+  }, [onLogin]);
+
+  if (onLogin) return null;
 
   return (
-    <nav>
-      <Link to="/">Tasks</Link>
-      {role === 'admin' && (
-        <>
-          <Link to="/admin">Admin options</Link>
-          <Link to="/admin/reviews">Submission review</Link>
-          <Link to="/admin/categories">Categories</Link>
-        </>
-      )}
-    </nav>
+    <aside className="side-nav" aria-label="Main navigation">
+      <div className="side-nav__trigger">☰</div>
+      <nav className="side-nav__panel">
+        <p className="side-nav__title">IPO Update Checker</p>
+        <NavLink to="/">Latest Articles</NavLink>
+        {role === 'admin' && (
+          <>
+            <NavLink to="/admin">Admin options</NavLink>
+            <NavLink to="/admin/reviews">Submission review</NavLink>
+            <NavLink to="/admin/categories">Auto categories</NavLink>
+            <NavLink to="/admin/sites">Territories & sites</NavLink>
+            <NavLink to="/admin/users">Users & privileges</NavLink>
+            <NavLink to="/admin/audit">Latest article audit</NavLink>
+          </>
+        )}
+      </nav>
+    </aside>
   );
 }
 

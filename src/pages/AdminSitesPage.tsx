@@ -22,6 +22,8 @@ export default function AdminSitesPage() {
   const [sites, setSites] = useState<SiteRow[]>([]);
   const [territoryForm, setTerritoryForm] = useState({ code: '', name: '' });
   const [siteForm, setSiteForm] = useState({ territory_id: '', label: '', source_url: '', instructions: '' });
+  const [territoryDrafts, setTerritoryDrafts] = useState<Record<string, TerritoryRow>>({});
+  const [siteDrafts, setSiteDrafts] = useState<Record<string, SiteRow>>({});
 
   const load = async () => {
     const [{ data: territoryData }, { data: siteData }] = await Promise.all([
@@ -29,11 +31,16 @@ export default function AdminSitesPage() {
       supabase.from('sites').select('id,label,source_url,instructions,active,territory_id').order('label', { ascending: true })
     ]);
 
-    setTerritories(territoryData ?? []);
-    setSites(siteData ?? []);
+    const territoryRows = territoryData ?? [];
+    const siteRows = siteData ?? [];
+
+    setTerritories(territoryRows);
+    setSites(siteRows);
+    setTerritoryDrafts(Object.fromEntries(territoryRows.map((row) => [row.id, row])));
+    setSiteDrafts(Object.fromEntries(siteRows.map((row) => [row.id, row])));
     setSiteForm((current) => ({
       ...current,
-      territory_id: current.territory_id || territoryData?.[0]?.id || ''
+      territory_id: current.territory_id || territoryRows[0]?.id || ''
     }));
   };
 
@@ -71,13 +78,29 @@ export default function AdminSitesPage() {
     await load();
   };
 
-  const updateTerritory = async (id: string, patch: Partial<TerritoryRow>) => {
-    await supabase.from('territories').update(patch).eq('id', id);
+  const saveTerritory = async (id: string) => {
+    const draft = territoryDrafts[id];
+    if (!draft) return;
+    await supabase
+      .from('territories')
+      .update({ code: draft.code.toUpperCase(), name: draft.name, active: draft.active })
+      .eq('id', id);
     await load();
   };
 
-  const updateSite = async (id: string, patch: Partial<SiteRow>) => {
-    await supabase.from('sites').update(patch).eq('id', id);
+  const saveSite = async (id: string) => {
+    const draft = siteDrafts[id];
+    if (!draft) return;
+    await supabase
+      .from('sites')
+      .update({
+        label: draft.label,
+        source_url: draft.source_url,
+        instructions: draft.instructions || null,
+        territory_id: draft.territory_id,
+        active: draft.active
+      })
+      .eq('id', id);
     await load();
   };
 
@@ -85,105 +108,149 @@ export default function AdminSitesPage() {
     <main>
       <h1>Admin: Territories & Sites</h1>
 
-      <section className="card">
-        <h2>Add territory</h2>
-        <form onSubmit={createTerritory}>
-          <input
-            placeholder="Code (e.g. US)"
-            value={territoryForm.code}
-            onChange={(e) => setTerritoryForm({ ...territoryForm, code: e.target.value })}
-            maxLength={8}
-            required
-          />
-          <input
-            placeholder="Name"
-            value={territoryForm.name}
-            onChange={(e) => setTerritoryForm({ ...territoryForm, name: e.target.value })}
-            required
-          />
-          <button type="submit">Add territory</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2>Add site</h2>
-        <form onSubmit={createSite}>
-          <select
-            value={siteForm.territory_id}
-            onChange={(e) => setSiteForm({ ...siteForm, territory_id: e.target.value })}
-            required
-          >
-            {territories.map((territory) => (
-              <option key={territory.id} value={territory.id}>
-                {territory.name} ({territory.code})
-              </option>
-            ))}
-          </select>
-          <input
-            placeholder="Site label"
-            value={siteForm.label}
-            onChange={(e) => setSiteForm({ ...siteForm, label: e.target.value })}
-            required
-          />
-          <input
-            placeholder="Source URL"
-            value={siteForm.source_url}
-            onChange={(e) => setSiteForm({ ...siteForm, source_url: e.target.value })}
-            required
-          />
-          <textarea
-            placeholder="Instructions"
-            value={siteForm.instructions}
-            onChange={(e) => setSiteForm({ ...siteForm, instructions: e.target.value })}
-          />
-          <button type="submit">Add site</button>
-        </form>
-      </section>
-
-      <section className="card">
-        <h2>Territories</h2>
-        {territories.map((territory) => (
-          <div className="row" key={territory.id}>
+      <section className="admin-grid admin-grid--two">
+        <article className="card">
+          <h2>Add territory</h2>
+          <form onSubmit={createTerritory}>
             <input
-              value={territory.code}
-              onChange={(e) => updateTerritory(territory.id, { code: e.target.value.toUpperCase() })}
+              placeholder="Code (e.g. US)"
+              value={territoryForm.code}
+              onChange={(e) => setTerritoryForm({ ...territoryForm, code: e.target.value })}
+              maxLength={8}
+              required
             />
-            <input value={territory.name} onChange={(e) => updateTerritory(territory.id, { name: e.target.value })} />
-            <label>
-              <input
-                type="checkbox"
-                checked={territory.active}
-                onChange={(e) => updateTerritory(territory.id, { active: e.target.checked })}
-              />
-              Active
-            </label>
-          </div>
-        ))}
-      </section>
+            <input
+              placeholder="Name"
+              value={territoryForm.name}
+              onChange={(e) => setTerritoryForm({ ...territoryForm, name: e.target.value })}
+              required
+            />
+            <button type="submit">Add territory</button>
+          </form>
+        </article>
 
-      <section className="card">
-        <h2>Sites</h2>
-        {sites.map((site) => (
-          <div className="row" key={site.id}>
-            <input value={site.label} onChange={(e) => updateSite(site.id, { label: e.target.value })} />
-            <input value={site.source_url} onChange={(e) => updateSite(site.id, { source_url: e.target.value })} />
-            <textarea
-              value={site.instructions ?? ''}
-              onChange={(e) => updateSite(site.id, { instructions: e.target.value || null })}
-            />
-            <select value={site.territory_id} onChange={(e) => updateSite(site.id, { territory_id: e.target.value })}>
+        <article className="card">
+          <h2>Add site</h2>
+          <form onSubmit={createSite}>
+            <select
+              value={siteForm.territory_id}
+              onChange={(e) => setSiteForm({ ...siteForm, territory_id: e.target.value })}
+              required
+            >
               {territories.map((territory) => (
                 <option key={territory.id} value={territory.id}>
                   {territory.name} ({territory.code})
                 </option>
               ))}
             </select>
-            <label>
-              <input type="checkbox" checked={site.active} onChange={(e) => updateSite(site.id, { active: e.target.checked })} />
-              Active
-            </label>
-          </div>
-        ))}
+            <input
+              placeholder="Site label"
+              value={siteForm.label}
+              onChange={(e) => setSiteForm({ ...siteForm, label: e.target.value })}
+              required
+            />
+            <input
+              placeholder="Source URL"
+              value={siteForm.source_url}
+              onChange={(e) => setSiteForm({ ...siteForm, source_url: e.target.value })}
+              required
+            />
+            <textarea
+              placeholder="Instructions"
+              value={siteForm.instructions}
+              onChange={(e) => setSiteForm({ ...siteForm, instructions: e.target.value })}
+            />
+            <button type="submit">Add site</button>
+          </form>
+        </article>
+      </section>
+
+      <section className="card">
+        <h2>Territories</h2>
+        <div className="stack">
+          {territories.map((territory) => {
+            const draft = territoryDrafts[territory.id] ?? territory;
+            return (
+              <article className="row row--card" key={territory.id}>
+                <div className="split split--equal">
+                  <input
+                    value={draft.code}
+                    onChange={(e) =>
+                      setTerritoryDrafts((current) => ({ ...current, [territory.id]: { ...draft, code: e.target.value.toUpperCase() } }))
+                    }
+                  />
+                  <input
+                    value={draft.name}
+                    onChange={(e) => setTerritoryDrafts((current) => ({ ...current, [territory.id]: { ...draft, name: e.target.value } }))}
+                  />
+                </div>
+                <div className="actions">
+                  <label className="inline-check">
+                    <input
+                      type="checkbox"
+                      checked={draft.active}
+                      onChange={(e) =>
+                        setTerritoryDrafts((current) => ({ ...current, [territory.id]: { ...draft, active: e.target.checked } }))
+                      }
+                    />
+                    Active
+                  </label>
+                  <button type="button" onClick={() => void saveTerritory(territory.id)}>
+                    Save
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Sites</h2>
+        <div className="stack">
+          {sites.map((site) => {
+            const draft = siteDrafts[site.id] ?? site;
+            return (
+              <article className="row row--card" key={site.id}>
+                <input
+                  value={draft.label}
+                  onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, label: e.target.value } }))}
+                />
+                <input
+                  value={draft.source_url}
+                  onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, source_url: e.target.value } }))}
+                />
+                <textarea
+                  value={draft.instructions ?? ''}
+                  onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, instructions: e.target.value || null } }))}
+                />
+                <select
+                  value={draft.territory_id}
+                  onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, territory_id: e.target.value } }))}
+                >
+                  {territories.map((territory) => (
+                    <option key={territory.id} value={territory.id}>
+                      {territory.name} ({territory.code})
+                    </option>
+                  ))}
+                </select>
+                <div className="actions">
+                  <label className="inline-check">
+                    <input
+                      type="checkbox"
+                      checked={draft.active}
+                      onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, active: e.target.checked } }))}
+                    />
+                    Active
+                  </label>
+                  <button type="button" onClick={() => void saveSite(site.id)}>
+                    Save
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
       </section>
     </main>
   );
