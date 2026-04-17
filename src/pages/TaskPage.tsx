@@ -116,33 +116,43 @@ export default function TaskPage() {
     <main>
       <header className="topbar card">
         <div>
-          <h1>Worker Queue</h1>
+          <h1>Latest Articles</h1>
           <p>{remaining} sites remaining today</p>
         </div>
         <div className="actions">
-          <button className="ghost" onClick={() => window.open(current.source_url, '_blank', 'noopener,noreferrer')}>
-            Open source
-          </button>
-          <button className="ghost" onClick={() => shiftNext()}>
-            Skip
-          </button>
           <button onClick={() => void signOut()}>Logout</button>
         </div>
       </header>
 
-      <TaskCard task={current} />
-      {!needsMismatch && <SubmissionForm onSubmit={onSubmit} />}
-      {needsMismatch && (
-        <MismatchArticlesForm
-          baseline={{
-            title: current.baseline.latest_article_title,
-            date: current.baseline.latest_article_date,
-            url: current.baseline.latest_article_url
-          }}
-          onSave={onMismatchSave}
-          onNoUpdates={shiftNext}
-        />
-      )}
+      <section className="task-layout">
+        <div className="task-layout__left">
+          <TaskCard task={current} />
+          <div className="card">
+            <div className="actions">
+              <button className="ghost" onClick={() => window.open(current.source_url, '_blank', 'noopener,noreferrer')}>
+                Open link
+              </button>
+              <button className="ghost" onClick={() => shiftNext()}>
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="task-layout__right">
+          {!needsMismatch && <SubmissionForm onSubmit={onSubmit} />}
+          {needsMismatch && (
+            <MismatchArticlesForm
+              baseline={{
+                title: current.baseline.latest_article_title,
+                date: current.baseline.latest_article_date,
+                url: current.baseline.latest_article_url
+              }}
+              onSave={onMismatchSave}
+              onNoUpdates={shiftNext}
+            />
+          )}
+        </div>
+      </section>
     </main>
   );
 }

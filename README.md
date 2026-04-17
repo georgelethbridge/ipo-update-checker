@@ -37,6 +37,7 @@ Static React + Vite frontend for assigning daily IP office checks to workers, wi
 1. Run migrations in order:
    - `supabase/migrations/20260416104000_init.sql`
    - `supabase/migrations/20260417113000_admin_management_policies.sql`
+   - `supabase/migrations/20260417130000_allowed_users.sql`
 2. Configure Google provider in Supabase Auth.
 3. Set redirect URLs:
    - `http://localhost:5173`

@@ -18,7 +18,7 @@ const OPTIONS = [
   },
   {
     title: 'Users & Privileges',
-    description: 'View worker activity and set user roles (worker/admin).',
+    description: 'Manage user access, allow-list entries, and role assignment.',
     to: '/admin/users'
   },
   {
@@ -31,17 +31,15 @@ const OPTIONS = [
 export default function AdminDashboardPage() {
   return (
     <main>
-      <h1>Admin Options</h1>
-      <p className="muted">Based on the flow: admins can choose between worker tasks and dedicated admin controls.</p>
+      <h1>Admin options</h1>
+      <p className="muted">Choose a page from the menu or click a tab below.</p>
       <section className="admin-grid">
         {OPTIONS.map((option) => (
-          <article key={option.title} className="card admin-option-card">
+          <Link key={option.title} className="card admin-option-card admin-option-card--tab" to={option.to}>
             <h3>{option.title}</h3>
             <p>{option.description}</p>
-            <Link className="button-link" to={option.to}>
-              Open option
-            </Link>
-          </article>
+            <span className="admin-option-card__cta">Open tab →</span>
+          </Link>
         ))}
       </section>
     </main>
