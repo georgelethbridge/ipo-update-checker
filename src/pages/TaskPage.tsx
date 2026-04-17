@@ -8,6 +8,16 @@ import { articlesMatch } from '../lib/compare';
 import { ArticleInput, SiteTask } from '../types/db';
 import { supabase } from '../lib/supabase';
 
+const getTimeUntilReset = () => {
+  const now = new Date();
+  const tomorrowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  const msRemaining = tomorrowUtc.getTime() - now.getTime();
+  const totalMinutes = Math.max(0, Math.floor(msRemaining / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}h ${minutes}m`;
+};
+
 export default function TaskPage() {
   const [userId, setUserId] = useState('');
   const [tasks, setTasks] = useState<SiteTask[]>([]);
@@ -26,7 +36,9 @@ export default function TaskPage() {
     setCurrent(eligible[0] ?? null);
   };
 
-  useEffect(() => { void loadTasks(); }, []);
+  useEffect(() => {
+    void loadTasks();
+  }, []);
 
   const shiftNext = () => {
     const next = tasks.slice(1);
@@ -88,14 +100,49 @@ export default function TaskPage() {
     shiftNext();
   };
 
-  if (!current) return <main className="center"><p>No remaining sites for today.</p><button onClick={() => void signOut()}>Logout</button></main>;
+  if (!current)
+    return (
+      <main className="center">
+        <section className="card empty-state">
+          <h2>All done for now</h2>
+          <p>No remaining sites for today.</p>
+          <p className="muted">Next task window opens in approximately {getTimeUntilReset()} (UTC reset).</p>
+          <button onClick={() => void signOut()}>Logout</button>
+        </section>
+      </main>
+    );
 
   return (
     <main>
-      <header><h1>Worker Queue</h1><p>{remaining} sites remaining today</p><button onClick={() => window.open(current.source_url, '_blank', 'noopener,noreferrer')}>Open source</button><button onClick={() => shiftNext()}>Skip</button><button onClick={() => void signOut()}>Logout</button></header>
+      <header className="topbar card">
+        <div>
+          <h1>Worker Queue</h1>
+          <p>{remaining} sites remaining today</p>
+        </div>
+        <div className="actions">
+          <button className="ghost" onClick={() => window.open(current.source_url, '_blank', 'noopener,noreferrer')}>
+            Open source
+          </button>
+          <button className="ghost" onClick={() => shiftNext()}>
+            Skip
+          </button>
+          <button onClick={() => void signOut()}>Logout</button>
+        </div>
+      </header>
+
       <TaskCard task={current} />
       {!needsMismatch && <SubmissionForm onSubmit={onSubmit} />}
-      {needsMismatch && <MismatchArticlesForm baselineTitle={current.baseline.latest_article_title} onSave={onMismatchSave} />}
+      {needsMismatch && (
+        <MismatchArticlesForm
+          baseline={{
+            title: current.baseline.latest_article_title,
+            date: current.baseline.latest_article_date,
+            url: current.baseline.latest_article_url
+          }}
+          onSave={onMismatchSave}
+          onNoUpdates={shiftNext}
+        />
+      )}
     </main>
   );
 }

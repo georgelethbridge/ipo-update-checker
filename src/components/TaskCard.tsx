@@ -2,16 +2,30 @@ import { SiteTask } from '../types/db';
 
 export default function TaskCard({ task }: { task: SiteTask }) {
   return (
-    <section className="card">
-      <h2>{task.territory.name} — {task.label}</h2>
-      <p><strong>Source:</strong> <a href={task.source_url} target="_blank" rel="noreferrer">{task.source_url}</a></p>
-      {task.instructions && <p className="instructions">Instructions: {task.instructions}</p>}
-      <div className="baseline">
-        <h3>Current approved baseline</h3>
-        <p><strong>Title:</strong> {task.baseline.latest_article_title || '—'}</p>
-        <p><strong>Date:</strong> {task.baseline.latest_article_date || '—'}</p>
-        <p><strong>URL:</strong> {task.baseline.latest_article_url || '—'}</p>
+    <section className="card task-card">
+      <div className="task-card__header">
+        <p className="badge">{task.territory.code}</p>
+        <h2>
+          {task.territory.name} <span>— {task.label}</span>
+        </h2>
       </div>
+
+      <p className="task-card__description">
+        Open the source page, find the latest published article, then submit the article title, date, and URL.
+      </p>
+
+      <div className="task-card__source">
+        <span>Source link to check</span>
+        <a href={task.source_url} target="_blank" rel="noreferrer">
+          {task.source_url}
+        </a>
+      </div>
+
+      {task.instructions && (
+        <p className="instructions">
+          <strong>Instructions:</strong> {task.instructions}
+        </p>
+      )}
     </section>
   );
 }
