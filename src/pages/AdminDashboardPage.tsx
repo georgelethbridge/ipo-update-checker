@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 const OPTIONS = [
   {
     title: 'Submission Reviews',
-    description: 'Review mismatched submissions and approve updates to the latest article baseline.',
+    description:
+      'Review mismatched submissions (including no-new-article escalations), edit summaries/categories, and approve baseline updates.',
     to: '/admin/reviews'
   },
   {
@@ -13,12 +14,12 @@ const OPTIONS = [
   },
   {
     title: 'Territories & Sites',
-    description: 'Maintain territories and the source links users work from.',
+    description: 'Maintain territories and source links, and directly update the stored latest-article details (title/date/URL).',
     to: '/admin/sites'
   },
   {
     title: 'Users & Privileges',
-    description: 'Manage user access, allow-list entries, and role assignment.',
+    description: 'Manage user access, allow-list entries, role assignment, and activity history.',
     to: '/admin/users'
   },
   {
@@ -32,7 +33,7 @@ export default function AdminDashboardPage() {
   return (
     <main>
       <h1>Admin options</h1>
-      <p className="muted">Choose a page from the menu or click a tab below.</p>
+      <p className="muted">Admins can review checks, manage reference data, and maintain user access from this area.</p>
       <section className="admin-grid">
         {OPTIONS.map((option) => (
           <Link key={option.title} className="card admin-option-card admin-option-card--tab" to={option.to}>

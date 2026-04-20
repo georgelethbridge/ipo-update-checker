@@ -9,7 +9,7 @@ export default function TaskCard({ task }: { task: SiteTask }) {
       </div>
 
       <p className="task-card__description">
-        Open the source page, find the latest published article, then submit the article title, date, and URL.
+        Open the source page, find the latest published article, then submit title/date/URL. If it differs from the saved record, you will be shown the last checked details and asked for newer articles since then.
       </p>
 
       {task.instructions && (
