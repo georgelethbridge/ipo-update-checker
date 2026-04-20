@@ -10,11 +10,13 @@ interface BaselineDetails {
 export default function MismatchArticlesForm({
   baseline,
   onSave,
-  onNoUpdates
+  onNoUpdates,
+  busy = false
 }: {
   baseline: BaselineDetails;
   onSave: (rows: ArticleInput[]) => Promise<void>;
   onNoUpdates: () => void;
+  busy?: boolean;
 }) {
   const [rows, setRows] = useState<ArticleInput[]>([{ title: '', date: '', url: '', articleText: '' }]);
 
@@ -26,6 +28,7 @@ export default function MismatchArticlesForm({
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (busy) return;
 
     if (!rows[0].articleText?.trim()) {
       alert('Newest article text is required.');
@@ -59,12 +62,14 @@ export default function MismatchArticlesForm({
             placeholder="Article title since last checked"
             value={row.title}
             onChange={(e) => update(i, { title: e.target.value })}
+            disabled={busy}
           />
-          <input type="date" value={row.date} onChange={(e) => update(i, { date: e.target.value })} />
+          <input type="date" value={row.date} onChange={(e) => update(i, { date: e.target.value })} disabled={busy} />
           <input
             placeholder="Article URL since last checked"
             value={row.url}
             onChange={(e) => update(i, { url: e.target.value })}
+            disabled={busy}
           />
           {i === 0 && (
             <textarea
@@ -72,10 +77,11 @@ export default function MismatchArticlesForm({
               placeholder="Paste newest article text"
               value={row.articleText}
               onChange={(e) => update(i, { articleText: e.target.value })}
+              disabled={busy}
             />
           )}
           {rows.length > 1 && (
-            <button type="button" className="ghost" onClick={() => setRows(rows.filter((_, idx) => idx !== i))}>
+            <button type="button" className="ghost" onClick={() => setRows(rows.filter((_, idx) => idx !== i))} disabled={busy}>
               Remove
             </button>
           )}
@@ -83,15 +89,15 @@ export default function MismatchArticlesForm({
       ))}
 
       <div className="actions">
-        <button type="button" className="ghost" onClick={() => setRows([...rows, { title: '', date: '', url: '' }])}>
+        <button type="button" className="ghost" onClick={() => setRows([...rows, { title: '', date: '', url: '' }])} disabled={busy}>
           Add older article
         </button>
-        <button type="button" className="ghost" onClick={onNoUpdates}>
+        <button type="button" className="ghost" onClick={onNoUpdates} disabled={busy}>
           No new articles since this one
         </button>
       </div>
 
-      <button type="submit">Submit newer articles</button>
+      <button type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit newer articles'}</button>
     </form>
   );
 }

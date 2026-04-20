@@ -5,6 +5,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
 };
 
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 12;
+const OPENAI_TIMEOUT_MS = 30_000;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -37,6 +41,21 @@ Deno.serve(async (req) => {
       return new Response('Forbidden', { status: 403, headers: corsHeaders });
     }
 
+    if (!isAdmin) {
+      const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+      const { count } = await admin
+        .from('article_ai_results')
+        .select('submissions!inner(user_id)', { count: 'exact', head: true })
+        .eq('submissions.user_id', userData.user.id)
+        .gte('updated_at', since);
+      if ((count ?? 0) >= RATE_LIMIT_MAX) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit exceeded. Please wait a minute and try again.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
     const articleText = submission.article_text?.trim();
     if (!articleText) return new Response(JSON.stringify({ summary: '', categories: [] }), { headers: corsHeaders });
 
@@ -54,6 +73,7 @@ Deno.serve(async (req) => {
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`
@@ -68,7 +88,12 @@ Deno.serve(async (req) => {
 
     const raw = await response.json();
     const content = raw?.choices?.[0]?.message?.content ?? '{}';
-    const parsed = JSON.parse(content);
+    let parsed: any = {};
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      parsed = {};
+    }
     const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
     const allowed = new Map((categories ?? []).map((c) => [c.name, c.id]));
     const selectedCategoryIds = Array.isArray(parsed.categories)
@@ -102,6 +127,11 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (e) {
-    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const message = (e as Error).message ?? 'unknown error';
+    const isTimeout = message.includes('timed out') || (e as Error).name === 'TimeoutError';
+    return new Response(
+      JSON.stringify({ error: isTimeout ? 'AI request timed out. Please retry.' : message }),
+      { status: isTimeout ? 504 : 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
