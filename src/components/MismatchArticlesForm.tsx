@@ -17,7 +17,6 @@ export default function MismatchArticlesForm({
   onNoUpdates: () => void;
 }) {
   const [rows, setRows] = useState<ArticleInput[]>([{ title: '', date: '', url: '', articleText: '' }]);
-  const [hasArticlesSinceBaseline, setHasArticlesSinceBaseline] = useState<boolean | null>(null);
 
   const update = (i: number, patch: Partial<ArticleInput>) => {
     const next = [...rows];
@@ -28,25 +27,20 @@ export default function MismatchArticlesForm({
   const submit = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (!hasArticlesSinceBaseline) {
-      onNoUpdates();
-      return;
-    }
-
     if (!rows[0].articleText?.trim()) {
       alert('Newest article text is required.');
       return;
     }
+
     await onSave(rows);
   };
 
   return (
     <form className="card mismatch-card" onSubmit={submit}>
-      <h3>Double-check flow</h3>
-      <p>Your submission did not match current records.</p>
+      <h3>Last article checked details</h3>
+      <p>Your submission did not match the last checked record. Add all newer articles since the one below.</p>
 
       <div className="baseline">
-        <h4>Last checked article details</h4>
         <p>
           <strong>Title:</strong> {baseline.title || '—'}
         </p>
@@ -58,68 +52,46 @@ export default function MismatchArticlesForm({
         </p>
       </div>
 
-      <fieldset className="choice-group">
-        <legend>Anything newer since that article?</legend>
-        <label>
+      {rows.map((row, i) => (
+        <div key={i} className="row">
           <input
-            type="radio"
-            name="anythingSince"
-            checked={hasArticlesSinceBaseline === true}
-            onChange={() => setHasArticlesSinceBaseline(true)}
+            required
+            placeholder="Article title since last checked"
+            value={row.title}
+            onChange={(e) => update(i, { title: e.target.value })}
           />
-          Yes, there are newer articles
-        </label>
-        <label>
+          <input type="date" value={row.date} onChange={(e) => update(i, { date: e.target.value })} />
           <input
-            type="radio"
-            name="anythingSince"
-            checked={hasArticlesSinceBaseline === false}
-            onChange={() => setHasArticlesSinceBaseline(false)}
+            placeholder="Article URL since last checked"
+            value={row.url}
+            onChange={(e) => update(i, { url: e.target.value })}
           />
-          No, nothing newer
-        </label>
-      </fieldset>
+          {i === 0 && (
+            <textarea
+              required
+              placeholder="Paste newest article text"
+              value={row.articleText}
+              onChange={(e) => update(i, { articleText: e.target.value })}
+            />
+          )}
+          {rows.length > 1 && (
+            <button type="button" className="ghost" onClick={() => setRows(rows.filter((_, idx) => idx !== i))}>
+              Remove
+            </button>
+          )}
+        </div>
+      ))}
 
-      {hasArticlesSinceBaseline && (
-        <>
-          {rows.map((row, i) => (
-            <div key={i} className="row">
-              <input
-                required
-                placeholder="Article title since last checked"
-                value={row.title}
-                onChange={(e) => update(i, { title: e.target.value })}
-              />
-              <input type="date" value={row.date} onChange={(e) => update(i, { date: e.target.value })} />
-              <input
-                placeholder="Article URL since last checked"
-                value={row.url}
-                onChange={(e) => update(i, { url: e.target.value })}
-              />
-              {i === 0 && (
-                <textarea
-                  required
-                  placeholder="Paste newest article text"
-                  value={row.articleText}
-                  onChange={(e) => update(i, { articleText: e.target.value })}
-                />
-              )}
-              {rows.length > 1 && (
-                <button type="button" className="ghost" onClick={() => setRows(rows.filter((_, idx) => idx !== i))}>
-                  Remove
-                </button>
-              )}
-            </div>
-          ))}
-          <button type="button" className="ghost" onClick={() => setRows([...rows, { title: '', date: '', url: '' }])}>
-            Add older article
-          </button>
-        </>
-      )}
+      <div className="actions">
+        <button type="button" className="ghost" onClick={() => setRows([...rows, { title: '', date: '', url: '' }])}>
+          Add older article
+        </button>
+        <button type="button" className="ghost" onClick={onNoUpdates}>
+          No new articles since this one
+        </button>
+      </div>
 
-      <button type="submit" disabled={hasArticlesSinceBaseline === null}>
-        {hasArticlesSinceBaseline ? 'Save mismatch details' : 'Send to admin review'}
-      </button>
+      <button type="submit">Submit newer articles</button>
     </form>
   );
 }

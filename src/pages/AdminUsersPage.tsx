@@ -91,6 +91,16 @@ export default function AdminUsersPage() {
         <p>Workers: {totals.workers}</p>
       </section>
 
+
+      <section className="card">
+        <h2>Role details</h2>
+        <p>
+          <strong>Worker:</strong> Can only perform daily checks and submit article updates for review.
+        </p>
+        <p>
+          <strong>Admin:</strong> Can review mismatches, manage categories, manage territories/sites, edit saved latest-article details, and manage users.
+        </p>
+      </section>
       <section className="card">
         <h2>Allow users</h2>
         <p className="muted">Add an email to pre-approve access and set the default role applied at first sign-in.</p>

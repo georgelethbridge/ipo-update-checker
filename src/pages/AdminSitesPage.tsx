@@ -17,27 +17,57 @@ interface SiteRow {
   territory_id: string;
 }
 
+interface SiteLatestRow {
+  site_id: string;
+  latest_article_title: string | null;
+  latest_article_date: string | null;
+  latest_article_url: string | null;
+}
+
+interface SiteDraft extends SiteRow {
+  latest_article_title: string;
+  latest_article_date: string;
+  latest_article_url: string;
+}
+
 export default function AdminSitesPage() {
   const [territories, setTerritories] = useState<TerritoryRow[]>([]);
   const [sites, setSites] = useState<SiteRow[]>([]);
   const [territoryForm, setTerritoryForm] = useState({ code: '', name: '' });
   const [siteForm, setSiteForm] = useState({ territory_id: '', label: '', source_url: '', instructions: '' });
   const [territoryDrafts, setTerritoryDrafts] = useState<Record<string, TerritoryRow>>({});
-  const [siteDrafts, setSiteDrafts] = useState<Record<string, SiteRow>>({});
+  const [siteDrafts, setSiteDrafts] = useState<Record<string, SiteDraft>>({});
 
   const load = async () => {
-    const [{ data: territoryData }, { data: siteData }] = await Promise.all([
+    const [{ data: territoryData }, { data: siteData }, { data: latestData }] = await Promise.all([
       supabase.from('territories').select('id,code,name,active').order('name', { ascending: true }),
-      supabase.from('sites').select('id,label,source_url,instructions,active,territory_id').order('label', { ascending: true })
+      supabase.from('sites').select('id,label,source_url,instructions,active,territory_id').order('label', { ascending: true }),
+      supabase.from('site_latest_articles').select('site_id,latest_article_title,latest_article_date,latest_article_url')
     ]);
 
     const territoryRows = territoryData ?? [];
     const siteRows = siteData ?? [];
+    const latestBySite = new Map((latestData as SiteLatestRow[] | null | undefined)?.map((row) => [row.site_id, row]) ?? []);
 
     setTerritories(territoryRows);
     setSites(siteRows);
     setTerritoryDrafts(Object.fromEntries(territoryRows.map((row) => [row.id, row])));
-    setSiteDrafts(Object.fromEntries(siteRows.map((row) => [row.id, row])));
+    setSiteDrafts(
+      Object.fromEntries(
+        siteRows.map((row) => {
+          const latest = latestBySite.get(row.id);
+          return [
+            row.id,
+            {
+              ...row,
+              latest_article_title: latest?.latest_article_title ?? '',
+              latest_article_date: latest?.latest_article_date ?? '',
+              latest_article_url: latest?.latest_article_url ?? ''
+            }
+          ];
+        })
+      )
+    );
     setSiteForm((current) => ({
       ...current,
       territory_id: current.territory_id || territoryRows[0]?.id || ''
@@ -91,6 +121,7 @@ export default function AdminSitesPage() {
   const saveSite = async (id: string) => {
     const draft = siteDrafts[id];
     if (!draft) return;
+
     await supabase
       .from('sites')
       .update({
@@ -101,6 +132,14 @@ export default function AdminSitesPage() {
         active: draft.active
       })
       .eq('id', id);
+
+    await supabase.from('site_latest_articles').upsert({
+      site_id: id,
+      latest_article_title: draft.latest_article_title.trim() || null,
+      latest_article_date: draft.latest_article_date || null,
+      latest_article_url: draft.latest_article_url.trim() || null
+    });
+
     await load();
   };
 
@@ -207,9 +246,12 @@ export default function AdminSitesPage() {
 
       <section className="card">
         <h2>Sites</h2>
+        <p className="muted">You can edit both site config and the saved "last checked article" baseline details from here.</p>
         <div className="stack">
           {sites.map((site) => {
-            const draft = siteDrafts[site.id] ?? site;
+            const draft = siteDrafts[site.id];
+            if (!draft) return null;
+
             return (
               <article className="row row--card" key={site.id}>
                 <input
@@ -234,6 +276,25 @@ export default function AdminSitesPage() {
                     </option>
                   ))}
                 </select>
+
+                <div className="split split--equal">
+                  <input
+                    placeholder="Latest article title"
+                    value={draft.latest_article_title}
+                    onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, latest_article_title: e.target.value } }))}
+                  />
+                  <input
+                    type="date"
+                    value={draft.latest_article_date}
+                    onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, latest_article_date: e.target.value } }))}
+                  />
+                </div>
+                <input
+                  placeholder="Latest article URL"
+                  value={draft.latest_article_url}
+                  onChange={(e) => setSiteDrafts((current) => ({ ...current, [site.id]: { ...draft, latest_article_url: e.target.value } }))}
+                />
+
                 <div className="actions">
                   <label className="inline-check">
                     <input
