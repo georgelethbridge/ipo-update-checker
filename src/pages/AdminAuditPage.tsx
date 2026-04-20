@@ -20,8 +20,20 @@ interface AuditRow {
   } | null;
 }
 
+interface HistoryRow {
+  id: string;
+  created_at: string;
+  review_status: 'pending' | 'approved' | 'rejected';
+  submitted_article_title: string | null;
+  matched_current_record: boolean | null;
+  profiles: { email: string | null } | null;
+}
+
 export default function AdminAuditPage() {
   const [rows, setRows] = useState<AuditRow[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [historyBySite, setHistoryBySite] = useState<Record<string, HistoryRow[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<string | null>(null);
 
   const load = async () => {
     const { data } = await supabase
@@ -49,6 +61,24 @@ export default function AdminAuditPage() {
     void load();
   }, []);
 
+  const toggleHistory = async (siteId: string) => {
+    if (expanded === siteId) {
+      setExpanded(null);
+      return;
+    }
+    setExpanded(siteId);
+    if (historyBySite[siteId]) return;
+    setHistoryLoading(siteId);
+    const { data } = await supabase
+      .from('submissions')
+      .select('id,created_at,review_status,submitted_article_title,matched_current_record,profiles!submissions_user_id_fkey(email)')
+      .eq('site_id', siteId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setHistoryBySite((prev) => ({ ...prev, [siteId]: (data as any) ?? [] }));
+    setHistoryLoading(null);
+  };
+
   return (
     <main>
       <h1>Admin: Latest Article Audit</h1>
@@ -59,6 +89,8 @@ export default function AdminAuditPage() {
             ?.map((link) => link.categories?.name)
             .filter(Boolean)
             .join(', ') ?? 'None';
+        const isOpen = expanded === row.id;
+        const history = historyBySite[row.id];
 
         return (
           <section className="card" key={row.id}>
@@ -92,6 +124,32 @@ export default function AdminAuditPage() {
             <p>
               <strong>Approved categories:</strong> {categories}
             </p>
+            <div className="actions">
+              <button type="button" className="ghost" onClick={() => void toggleHistory(row.id)}>
+                {isOpen ? 'Hide history' : 'Show history'}
+              </button>
+            </div>
+            {isOpen && (
+              <div style={{ marginTop: '0.75rem' }}>
+                {historyLoading === row.id && <p className="muted">Loading…</p>}
+                {history && history.length === 0 && <p className="muted">No submissions yet.</p>}
+                {history && history.length > 0 && (
+                  <ul style={{ paddingLeft: '1rem' }}>
+                    {history.map((h) => (
+                      <li key={h.id} style={{ marginBottom: '0.35rem' }}>
+                        <span className="muted">{new Date(h.created_at).toLocaleString()}</span>
+                        {' · '}
+                        <strong>{h.review_status}</strong>
+                        {h.matched_current_record ? ' · match' : ' · mismatch'}
+                        {' · '}
+                        {h.profiles?.email || 'unknown'}
+                        {h.submitted_article_title ? ` — ${h.submitted_article_title}` : ''}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </section>
         );
       })}
