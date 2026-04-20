@@ -193,14 +193,14 @@ export default function TaskPage() {
     setBusy(true);
     try {
       const { error: rpcError } = await supabase.rpc('worker_submit_mismatch', {
-        p_submission_id: submissionId,
         p_article_text: rows[0].articleText ?? '',
         p_rows: rows.map((row) => ({
           title: row.title,
           date: row.date || null,
           url: row.url || null,
           articleText: row.articleText ?? ''
-        }))
+        })),
+        p_submission_id: submissionId
       });
       if (rpcError) throw rpcError;
 
